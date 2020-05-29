@@ -190,12 +190,12 @@ class DataAQ():
                 wfile=open(f'{self.filename}', mode='a+')
                 writer = csv.writer(wfile, lineterminator = '\n')  
                 variable_line=linecache.getline(self.filename, 2).split(',')
-                self.salinity=variable_line[1]
-                self.Vs=variable_line[3]
+                self.salinity=float(variable_line[1])
+                self.Vs=float(variable_line[3])
                 data_line=linecache.getline(self.filename,4).split(',')
                 #line_time=data_line[0].split('.')
                 starttime=datetime.datetime.strptime(data_line[0], '%Y-%m-%d %H:%M:%S')
-                refD=self.DensityCalc(data_line[3])
+                refD=self.Density_Calc(float(data_line[3]))
             else:
                 sys.exit('Answer was not Y! Cancel DataAQ()')
         else:    
