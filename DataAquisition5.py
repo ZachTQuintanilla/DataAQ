@@ -28,12 +28,12 @@ from email.mime.image import MIMEImage
 
 class DataAQ():
     
-    def __init__(self, filename='abc.csv'):
+    def __init__(self, filename='abc.csv',salinity = 30):
         self.filename = filename
         self.name=self.filename.split('.')[0]
         self.My_Email = input('Please provide email address:\n')
         self.Pass = getpass.getpass(prompt='Please provide email password:\n')
-        self.Check_Login()
+        self.Check_Login()  
 
   
     def Check_Login(self):
@@ -174,8 +174,8 @@ class DataAQ():
         Temp_Error = (.15 + temp*.002)
         High_Temp = temp + Temp_Error
         Low_Temp = temp - Temp_Error
-        High_Weight_Error = self.TempCorrection(High_Temp,RefD,raw_weight)
-        Low_Weight_Error = self.TempCorrection(Low_Temp,RefD,raw_weight)
+        High_Weight_Error = self.Temp_Correction(High_Temp,RefD,raw_weight)
+        Low_Weight_Error = self.Temp_Correction(Low_Temp,RefD,raw_weight)
         return High_Weight_Error, Low_Weight_Error
         
     def Aquire(self):    
@@ -200,13 +200,13 @@ class DataAQ():
                 sys.exit('Answer was not Y! Cancel DataAQ()')
         else:    
             starttime=datetime.datetime.now().replace(microsecond=0)
+            self.salinity = float(input('Please provide salinity of the brine (mg/L):\n'))
+            self.Vs = float(input('Please provide an estimate for the total solid volume submerged (cm^3):\n'))
             refD=self.Density_Calc(rtdsensor.temperature)
-            self.salinity = input('Please provide salinity of the brine (mg/L):\n')
-            self.Vs = input('Please provide an estimate for the total solid volume submerged (cm^3):\n')
             wfile=open(f'{self.filename}', mode='a+')
             writer = csv.writer(wfile, lineterminator = '\n')
             writer.writerow([f'Experiment: {self.name}'])
-            writer.writerow('Brine_Salinity/C12',self.salinity,'Vs',self.Vs)
+            writer.writerow(['Brine_Salinity/C12',self.salinity,'Vs',self.Vs])
             writer.writerow(['Time','Relative Time (Hours)','Weight (g)','Liq Temperature (C)','Air Temperature (C)','Humidity','Temp Adjusted Weight (g)', '(+)Error from RTD sensor (g)','(-)Error from RTD sensor (g)','Comments'])
         initialweight=self.Scale_Value()
         print('Data Aquisition in progress!') 
