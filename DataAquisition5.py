@@ -142,15 +142,23 @@ class DataAQ():
         server.quit()    
         
     def simple_plot(self):
-        plottime, plotweight, plottemp = np.loadtxt(self.filename,skiprows=3,delimiter=',', usecols=(1,2,3)).T
+        plottime, real_weight, plottemp, adj_weight = np.loadtxt(self.filename,skiprows=3,delimiter=',', usecols=(1,2,3,6)).T
         fig, ax = plt.subplots(figsize=(8,6), dpi=80)
-        plt.plot(plottime,plotweight)
+        ax.plot(plottime,real_weight,'b-',label='Recorded_Weight')
+        ax.plot(plottime,adj_weight,'g--',label='Temp Corrected Weight')
         ax.set_ylabel('Weight(g)',fontsize=10)
         ax.set_xlabel('Time (hours)',fontsize = 10)
+        
+        ax2 = ax.twinx()
+        ax2.set_ylabel('Temperature (C)')
+        ax2.plot(plottime,plottemp,'r')
+        
+        ax.legend()
         plt.title(self.name,fontsize = 18)
         if os.path.isfile(f'{self.name}.pdf'):
             os.remove(f'{self.name}.pdf')
         plt.savefig(f'{self.name}.pdf')
+        plt.close()
     
     def Density_Calc(self,temp):
         if self.salinity == 'C12':
@@ -221,15 +229,15 @@ class DataAQ():
             PlusError, MinusError = self.Error(Liq_Temperature, refD, weight)
             writer.writerow([timestamp,relativetime,weight,Liq_Temperature,Air_Temperature, Humidity, AdjWeight, PlusError, MinusError])
             #needs to be 15,30,45,60 sec interval)
-            time.sleep(30)
+            time.sleep(1)
             count+=1
             ecount+=1
             #log every 30 min count==120,60,40,30    
-            if count==60:
+            if count==1:
                 wfile.close()
                 #email every 4 hrs ecount==960,480,320,240
                 print(f'DATA LOGGED @ {datetime.datetime.now()}!')
-                if ecount >= 480:
+                if ecount >= 1:
                     try:
                         self.send_email(weight-initialweight)
                         initialweight=self.Scale_Value()
