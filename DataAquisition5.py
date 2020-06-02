@@ -31,8 +31,8 @@ class DataAQ():
     def __init__(self, filename='abc.csv',salinity = 30):
         self.filename = filename
         self.name=self.filename.split('.')[0]
-        self.My_Email = input('Please provide email address:\n')
-        self.Pass = getpass.getpass(prompt='Please provide email password:\n')
+        self.My_Email = input('Please provide the sending email address:\n')
+        self.Pass = getpass.getpass(prompt='Please provide the sending email password:\n')
         self.Check_Login()  
 
   
@@ -229,15 +229,15 @@ class DataAQ():
             PlusError, MinusError = self.Error(Liq_Temperature, refD, weight)
             writer.writerow([timestamp,relativetime,weight,Liq_Temperature,Air_Temperature, Humidity, AdjWeight, PlusError, MinusError])
             #needs to be 15,30,45,60 sec interval)
-            time.sleep(1)
+            time.sleep(60)
             count+=1
             ecount+=1
             #log every 30 min count==120,60,40,30    
-            if count==1:
+            if count==60:
                 wfile.close()
                 #email every 4 hrs ecount==960,480,320,240
-                print(f'DATA LOGGED @ {datetime.datetime.now()}!')
-                if ecount >= 1:
+                print(f'DATA LOGGED @ {datetime.datetime.now().replace(microsecond=0)}!')
+                if ecount >= 240:
                     try:
                         self.send_email(weight-initialweight)
                         initialweight=self.Scale_Value()
