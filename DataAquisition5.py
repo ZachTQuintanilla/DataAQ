@@ -162,8 +162,9 @@ class DataAQ():
     
     def Density_Calc(self,temp):
         if self.salinity == 'C12':
-            pass  
-            #need to fill in dodecane density equation for temperature
+            a = -.731*10**-3
+            b = -.32*10**-6
+            TrueDens = .75 + a*(temp-20) + b/2*(temp-20)**2       
         else:
             CleanDens = 1000 * (1 - (temp + 288.9414) / (508929.2 * (temp + 68.12963)) * (temp - 3.9863) ** 2)
             A = 0.824493 - 0.0040899 * temp + 0.000076438 * temp ** 2 - 0.00000082467 * temp ** 3 + 0.0000000053675 * temp ** 4
@@ -208,7 +209,9 @@ class DataAQ():
                 sys.exit('Answer was not Y! Cancel DataAQ()')
         else:    
             starttime=datetime.datetime.now().replace(microsecond=0)
-            self.salinity = float(input('Please provide salinity of the brine (mg/L):\n'))
+            self.salinity = (input('Please provide salinity of the brine (mg/L):\n'))
+            if self.salinity != 'C12':
+                self.salinity = float(self.salinity)
             self.Vs = float(input('Please provide an estimate for the total solid volume submerged (cm^3):\n'))
             refD=self.Density_Calc(rtdsensor.temperature)
             wfile=open(f'{self.filename}', mode='a+')
