@@ -155,8 +155,9 @@ class DataAQ():
     
     def Density_Calc(self,temp):
         if self.salinity == 'C12':
-            pass  
-            #need to fill in dodecane density equation for temperature
+            a = -.731*10**-3
+            b = -.32*10**-6
+            TrueDens = .75 + a*(temp-20) + b/2*(temp-20)**2
         else:
             CleanDens = 1000 * (1 - (temp + 288.9414) / (508929.2 * (temp + 68.12963)) * (temp - 3.9863) ** 2)
             A = 0.824493 - 0.0040899 * temp + 0.000076438 * temp ** 2 - 0.00000082467 * temp ** 3 + 0.0000000053675 * temp ** 4
@@ -196,14 +197,14 @@ class DataAQ():
                 data_line=linecache.getline(self.filename,4).split(',')
                 #line_time=data_line[0].split('.')
                 starttime=datetime.datetime.strptime(data_line[0], '%Y-%m-%d %H:%M:%S')
-                #refD=self.Density_Calc(float(data_line[3]))
+                refD=self.Density_Calc(float(data_line[3]))
             else:
                 sys.exit('Answer was not Y! Cancel DataAQ()')
         else:    
             starttime=datetime.datetime.now().replace(microsecond=0)
             self.salinity = float(input('Please provide salinity of the brine (mg/L):\n'))
             self.Vs = float(input('Please provide an estimate for the total solid volume submerged (cm^3):\n'))
-            #refD=self.Density_Calc(rtdsensor.temperature)
+            refD=self.Density_Calc(rtdsensor.temperature)
             wfile=open(f'{self.filename}', mode='a+')
             writer = csv.writer(wfile, lineterminator = '\n')
             writer.writerow([f'Experiment: {self.name}'])
@@ -215,10 +216,10 @@ class DataAQ():
             timestamp = datetime.datetime.now().replace(microsecond=0)
             relativetime = (timestamp-starttime)/datetime.timedelta(hours=1)
             weight = self.Scale_Value()
-            Liq_Temperature = 0.0#rtdsensor.temperature 
+            Liq_Temperature = rtdsensor.temperature 
             Humidity, Air_Temperature = dht.read_retry(dht.DHT22, 4)
-            AdjWeight=0.0#self.Temp_Correction(Liq_Temperature,refD,weight)
-            PlusError, MinusError = (0.0,0.0)#self.Error(Liq_Temperature, refD, weight)
+            AdjWeight = self.Temp_Correction(Liq_Temperature,refD,weight)
+            PlusError, MinusError = self.Error(Liq_Temperature, refD, weight)
             writer.writerow([timestamp,relativetime,weight,Liq_Temperature,Air_Temperature, Humidity, AdjWeight, PlusError, MinusError])
             #needs to be 15,30,45,60 sec interval)
             time.sleep(60)
@@ -230,12 +231,12 @@ class DataAQ():
                 #email every 4 hrs ecount==960,480,320,240
                 print(f'DATA LOGGED @ {datetime.datetime.now().replace(microsecond=0)}!')
                 if ecount >= 240:
-                    #try:
-                    self.send_email(weight-initialweight)
-                    initialweight=self.Scale_Value()
-                    ecount = 0
-                    #except:
-                        #print('Email(s) not sent! Still recording data!')                
+                    try:
+                        self.send_email(weight-initialweight)
+                        initialweight=self.Scale_Value()
+                        ecount = 0
+                    except:
+                        print('Email(s) not sent! Still recording data!')                
                 wfile=open(f'{self.filename}', mode='a+')
                 writer = csv.writer(wfile, lineterminator = '\n')
                 count=0
