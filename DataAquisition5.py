@@ -19,6 +19,7 @@ import board
 import busio
 import digitalio
 import os.path
+import re
 from string import Template
 from email.message import EmailMessage
 from email.mime.image import MIMEImage
@@ -68,11 +69,12 @@ class DataAQ():
         return rtdsensor
         
     def Scale_Value(self):
-        self.ser.write(b"\x1bP\r\n")        
-        weight = self.ser.readline()  
-        weight = str(weight) 
-        weight=weight[11:18]  
-        weight = float(weight) 
+        self.ser.write(b"\x1bP\r\n")  
+        weight = self.ser.readline() 
+        self.ser.write(b"\x1bP\r\n")     
+        weight = self.ser.readline() 
+        weight=re.findall("\d+\.\d+",str(weight))
+        weight = float(weight[0]) 
         return weight
         
     def get_contacts(self,file):
