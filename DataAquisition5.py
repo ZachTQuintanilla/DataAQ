@@ -222,11 +222,17 @@ class DataAQ():
             writer.writerow(['Brine_Salinity/C12',self.salinity,'Vs',self.Vs])
             writer.writerow(['Time','Relative Time (Hours)','Weight (g)','Liq Temperature (C)','Air Temperature (C)','Humidity','Temp Adjusted Weight (g)', '(+)Error from RTD sensor (g)','(-)Error from RTD sensor (g)','Comments'])
         initialweight=self.Scale_Value()
+        while initialweight<10:
+            print('Scale Error = Value Too Small')
+            initialweight = self.Scale_Value()
         print('Data Aquisition in progress!') 
         while True: 
             timestamp = datetime.datetime.now().replace(microsecond=0)
             relativetime = (timestamp-starttime)/datetime.timedelta(hours=1)
             weight = self.Scale_Value()
+            while weight<10:
+                print('Scale Error = Value Too Small')
+                weight = self.Scale_Value()
             Liq_Temperature = rtdsensor.temperature 
             #Liq_Temperature = ksensor.readTempC()  
             Humidity, Air_Temperature = dht.read_retry(dht.DHT22, 4)
