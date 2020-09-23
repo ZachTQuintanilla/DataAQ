@@ -19,6 +19,7 @@ import board
 import busio
 import digitalio
 import os.path
+import re
 from string import Template
 from email.message import EmailMessage
 from email.mime.image import MIMEImage
@@ -68,11 +69,12 @@ class DataAQ():
         return rtdsensor
         
     def Scale_Value(self):
-        self.ser.write(b"\x1bP\r\n")        
-        weight = self.ser.readline()  
-        weight = str(weight) 
-        weight=weight[11:18]  
-        weight = float(weight) 
+        self.ser.write(b"\x1bP\r\n")  
+        weight = self.ser.readline() 
+        self.ser.write(b"\x1bP\r\n")     
+        weight = self.ser.readline() 
+        weight=re.findall("\d+\.\d+",str(weight))
+        weight = float(weight[0]) 
         return weight
         
     def get_contacts(self,file):
@@ -162,8 +164,9 @@ class DataAQ():
     
     def Density_Calc(self,temp):
         if self.salinity == 'C12':
-            pass  
-            #need to fill in dodecane density equation for temperature
+            a = -.731*10**-3
+            b = -.32*10**-6
+            TrueDens = .75 + a*(temp-20) + b/2*(temp-20)**2       
         else:
             CleanDens = 1000 * (1 - (temp + 288.9414) / (508929.2 * (temp + 68.12963)) * (temp - 3.9863) ** 2)
             A = 0.824493 - 0.0040899 * temp + 0.000076438 * temp ** 2 - 0.00000082467 * temp ** 3 + 0.0000000053675 * temp ** 4
@@ -208,7 +211,9 @@ class DataAQ():
                 sys.exit('Answer was not Y! Cancel DataAQ()')
         else:    
             starttime=datetime.datetime.now().replace(microsecond=0)
-            self.salinity = float(input('Please provide salinity of the brine (mg/L):\n'))
+            self.salinity = (input('Please provide salinity of the brine (mg/L):\n'))
+            if self.salinity != 'C12':
+                self.salinity = float(self.salinity)
             self.Vs = float(input('Please provide an estimate for the total solid volume submerged (cm^3):\n'))
             refD=self.Density_Calc(rtdsensor.temperature)
             wfile=open(f'{self.filename}', mode='a+')
@@ -217,11 +222,17 @@ class DataAQ():
             writer.writerow(['Brine_Salinity/C12',self.salinity,'Vs',self.Vs])
             writer.writerow(['Time','Relative Time (Hours)','Weight (g)','Liq Temperature (C)','Air Temperature (C)','Humidity','Temp Adjusted Weight (g)', '(+)Error from RTD sensor (g)','(-)Error from RTD sensor (g)','Comments'])
         initialweight=self.Scale_Value()
+        while initialweight<10:
+            print('Scale Error = Value Too Small')
+            initialweight = self.Scale_Value()
         print('Data Aquisition in progress!') 
         while True: 
             timestamp = datetime.datetime.now().replace(microsecond=0)
             relativetime = (timestamp-starttime)/datetime.timedelta(hours=1)
             weight = self.Scale_Value()
+            while weight<10:
+                print('Scale Error = Value Too Small')
+                weight = self.Scale_Value()
             Liq_Temperature = rtdsensor.temperature 
             #Liq_Temperature = ksensor.readTempC()  
             Humidity, Air_Temperature = dht.read_retry(dht.DHT22, 4)
