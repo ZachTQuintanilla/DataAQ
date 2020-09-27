@@ -1,0 +1,8 @@
+#1/bin/bash
+cd ~
+sudo pip3 install Adafruit_DHT
+sudo pip3 install adafruit-circuitpython-max31865
+git clone https://github.com/adafuit/Adafruit_Python_MAX31855.git
+cd Adafruit_Python_MAX31855
+sudo python setup.py install
+cd ~
