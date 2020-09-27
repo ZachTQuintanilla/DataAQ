@@ -13,6 +13,8 @@ import smtplib
 import sys
 import getpass
 
+import RPi.GPIO as GPIO
+
 import adafruit_max31865
 import Adafruit_DHT as dht
 import board
@@ -71,10 +73,10 @@ class DataAQ():
             template_file_content = template_file.read()
         return Template(template_file_content)      
     
-    def send_email(self,wchange):
+    def send_email(self):
         
         names,emails = self.get_contacts('lab_contacts.txt')
-        message_template = self.read_template('Regular_Message.txt')
+        message_template = self.read_template('Temp_Message.txt')
 
         server=smtplib.SMTP('smtp.gmail.com', 587, timeout=300)
         server.starttls()
@@ -83,7 +85,7 @@ class DataAQ():
         for name, email in zip(names, emails):
             self.simple_plot()
             msg = EmailMessage()
-            message = message_template.substitute(PERSON_NAME=name.title(),WEIGHT_CHANGE=wchange)
+            message = message_template.substitute(PERSON_NAME=name.title())
             msg['From'] = self.My_Email
             msg['To']= email
             msg['Subject'] = self.name
@@ -142,6 +144,7 @@ class DataAQ():
         ecount = 0
         plt.show(block=True)
         rtdsensor=self.RTD_init()
+        GPIO.setup(25,GPIO.OUT)
         if os.path.isfile(self.filename):
             answer = input('File already exists! Would you like to append to the exsisting file? (Y/N) \n')
             if answer == 'Y':
@@ -176,11 +179,11 @@ class DataAQ():
                     control_counter+=1
                     temp_check =rtdsensor.temperature
                     if temp_check>36:
-                        GPIO.ouput(25,False)
-                        print('Activate Lights')
-                    elif temp_chemck<35.25:
-                        GPIO.output(25,True)
+                        GPIO.output(25,False)
                         print('Lights Off')
+                    elif temp_check<35.25:
+                        GPIO.output(25,True)
+                        print('Lights On')
             else:
                 time.sleep(60)
                 
@@ -215,6 +218,7 @@ if __name__ == '__main__':
         plt.show(block=False)
         wfile=open(filename, mode='a+')
         wfile.close()
+        GPIO.output(25,False)
         final=input('Is this experiment complete? (Y/N)')    
         if final == 'Y':   
             Experiment.send_final_email()
