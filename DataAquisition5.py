@@ -203,29 +203,32 @@ class DataAQ():
                 variable_line=linecache.getline(self.filename, 2).split(',')
                 self.salinity=float(variable_line[1])
                 self.Vs=float(variable_line[3])
-                data_line=linecache.getline(self.filename,4).split(',')
-                #line_time=data_line[0].split('.')
-                starttime=datetime.datetime.strptime(data_line[0], '%Y-%m-%d %H:%M:%S')
-                refD=self.Density_Calc(float(data_line[3]))
+                starttime=datetime.datetime.strptime(variable_line[5], '%Y-%m-%d %H:%M:%S')
+                refD=self.Density_Calc(float(variable_line[9]))
             else:
                 sys.exit('Answer was not Y! Cancel DataAQ()')
         else:    
-            starttime=datetime.datetime.now().replace(microsecond=0)
+            
             self.salinity = (input('Please provide salinity of the brine (mg/L):\n'))
             if self.salinity != 'C12':
                 self.salinity = float(self.salinity)
             self.Vs = float(input('Please provide an estimate for the total solid volume submerged (cm^3):\n'))
-            refD=self.Density_Calc(rtdsensor.temperature)
+            
+            BEGIN = input('Data Aquisition armed press enter when ready!') 
+            
             wfile=open(f'{self.filename}', mode='a+')
             writer = csv.writer(wfile, lineterminator = '\n')
             writer.writerow([f'Experiment: {self.name}'])
-            writer.writerow(['Brine_Salinity/C12',self.salinity,'Vs',self.Vs])
+            initial_temp=rtdsensor.temperature
+            refD=self.Density_Calc(initial_temp)
+            starttime=datetime.datetime.now().replace(microsecond=0)
+            initialweight=self.Scale_Value()
+            while initialweight<10:
+                print('Scale Error = Value Too Small')
+                initialweight = self.Scale_Value()
+            writer.writerow(['Brine_Salinity/C12',self.salinity,'Vs',self.Vs,'StartTime',starttime,'InitialWeight',initialweight,'Initial_Temp',initial_temp])
             writer.writerow(['Time','Relative Time (Hours)','Weight (g)','Liq Temperature (C)','Air Temperature (C)','Humidity','Temp Adjusted Weight (g)', '(+)Error from RTD sensor (g)','(-)Error from RTD sensor (g)','Comments'])
-        initialweight=self.Scale_Value()
-        while initialweight<10:
-            print('Scale Error = Value Too Small')
-            initialweight = self.Scale_Value()
-        print('Data Aquisition in progress!') 
+        print('Initial Data Recorded! Starting DataAQ!')
         while True: 
             timestamp = datetime.datetime.now().replace(microsecond=0)
             relativetime = (timestamp-starttime)/datetime.timedelta(hours=1)
@@ -238,7 +241,7 @@ class DataAQ():
             Humidity, Air_Temperature = dht.read_retry(dht.DHT22, 4)
             AdjWeight=self.Temp_Correction(Liq_Temperature,refD,weight)
             PlusError, MinusError = self.Error(Liq_Temperature, refD, weight)
-            writer.writerow([timestamp,relativetime,weight,Liq_Temperature,Air_Temperature, Humidity, AdjWeight, PlusError, MinusError])
+            writer.writerow([timestamp,format(relativetime,'.4f'),format(weight,'.4f'),format(Liq_Temperature,'.4f'),format(Air_Temperature,'.4f'), format(Humidity,'.2f'), format(AdjWeight,'.4f'), format(PlusError,'.4f'), format(MinusError,'.4f')])
             #needs to be 15,30,45,60 sec interval)
             time.sleep(60)
             count+=1
@@ -250,7 +253,7 @@ class DataAQ():
                 print(f'DATA LOGGED @ {datetime.datetime.now().replace(microsecond=0)}!')
                 if ecount >= 240:
                     try:
-                        self.send_email(weight-initialweight)
+                        self.send_email(format(weight-initialweight,'.4f'))
                         initialweight=self.Scale_Value()
                         ecount = 0
                     except:
