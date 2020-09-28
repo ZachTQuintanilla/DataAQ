@@ -1,5 +1,7 @@
 #1/bin/bash
+#script to install nessecary python packages for a fresh Raspberian OS
 cd ~
+sudo pip3 install matplotlib
 sudo pip3 install Adafruit_DHT
 sudo pip3 install adafruit-circuitpython-max31865
 git clone https://github.com/adafuit/Adafruit_Python_MAX31855.git
