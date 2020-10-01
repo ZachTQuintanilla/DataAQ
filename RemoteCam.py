@@ -18,9 +18,18 @@ import os
 class RemoteCam():
     def __init__(self, filename = 'video.h264'):
         self.filename = filename
-        self.My_Email = input('Please provide the sending email address:\n')
-        self.Pass = getpass.getpass(prompt='Please provide the sending email password:\n')
-        self.Check_Login()
+        try:
+            self.Check_Cred()
+        except:
+            self.My_Email = input('Please provide the sending email address:\n')
+            self.Pass = getpass.getpass(prompt='Please provide the sending email password:\n')
+            self.Check_Login()
+    def Check_Cred(self):
+        with open('Credentials', mode='r') as info:
+            for line in info:
+                self.My_Email=line.split()[0]
+                self.Pass=line.split()[1]
+        self.Check_Login()      
     def Check_Login(self):
         try:
             server=smtplib.SMTP('smtp.gmail.com', 587, timeout=300)
@@ -73,11 +82,11 @@ class RemoteCam():
             del msg
         print(f'Email(s) sent!')   
     def CameraRecord(self):
-  
+        print('Recording Video!')
         camera = PiCamera()
         camera.resolution = (640,480)
         camera.start_recording(self.filename)
-        camera.wait_recording(5)
+        camera.wait_recording(30)
         camera.stop_recording()
         
         os.system("MP4Box -add " + self.filename + " " + 'video.mp4') # tutorial for install to make this conversion possible at: http://raspi.tv/2013/another-way-to-convert-raspberry-pi-camera-h264-output-to-mp4
