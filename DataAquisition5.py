@@ -32,11 +32,20 @@ class DataAQ():
     def __init__(self, filename='abc.csv',salinity = 30):
         self.filename = filename
         self.name=self.filename.split('.')[0]
-        self.My_Email = input('Please provide the sending email address:\n')
-        self.Pass = getpass.getpass(prompt='Please provide the sending email password:\n')
-        self.Check_Login()  
-
-  
+        try:
+            self.Check_Cred()
+        except:
+            self.My_Email = input('Please provide the sending email address:\n')
+            self.Pass = getpass.getpass(prompt='Please provide the sending email password:\n')
+            self.Check_Login()
+            
+    def Check_Cred(self):
+        with open('Credentials', mode='r') as info:
+            for line in info:
+                self.My_Email=line.split()[0]
+                self.Pass=line.split()[1]
+        self.Check_Login()
+        
     def Check_Login(self):
         try:
             server=smtplib.SMTP('smtp.gmail.com', 587, timeout=300)
@@ -69,7 +78,7 @@ class DataAQ():
         return rtdsensor
         
     def Scale_Value(self):
-        self.ser.write(b"\x1bP\r\n")  
+        self.ser.write(b"\x1bP\r\n")     
         weight = self.ser.readline() 
         self.ser.write(b"\x1bP\r\n")     
         weight = self.ser.readline() 
@@ -204,6 +213,7 @@ class DataAQ():
                 self.salinity=float(variable_line[1])
                 self.Vs=float(variable_line[3])
                 starttime=datetime.datetime.strptime(variable_line[5], '%Y-%m-%d %H:%M:%S')
+                initialweight = float(variable_line[7])
                 refD=self.Density_Calc(float(variable_line[9]))
             else:
                 sys.exit('Answer was not Y! Cancel DataAQ()')
