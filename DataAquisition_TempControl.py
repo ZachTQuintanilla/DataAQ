@@ -34,11 +34,18 @@ class DataAQ():
         self.filename = filename
         self.name=self.filename.split('.')[0]
         self.control = control
-        self.My_Email = input('Please provide the sending email address:\n')
-        self.Pass = getpass.getpass(prompt='Please provide the sending email password:\n')
+        try:
+            self.Check_Cred()
+        except:
+            self.My_Email = input('Please provide the sending email address:\n')
+            self.Pass = getpass.getpass(prompt='Please provide the sending email password:\n')
+            self.Check_Login()
+    def Check_Cred(self):
+        with open('Credentials', mode='r') as info:
+            for line in info:
+                self.My_Email=line.split()[0]
+                self.Pass=line.split()[1]
         self.Check_Login()  
-
-  
     def Check_Login(self):
         try:
             server=smtplib.SMTP('smtp.gmail.com', 587, timeout=300)
@@ -178,10 +185,10 @@ class DataAQ():
                     time.sleep(1)
                     control_counter+=1
                     temp_check =rtdsensor.temperature
-                    if temp_check>36:
+                    if temp_check>38.5:
                         GPIO.output(25,False)
                         print('Lights Off')
-                    elif temp_check<35.25:
+                    elif temp_check<37.5:
                         GPIO.output(25,True)
                         print('Lights On')
             else:
@@ -209,7 +216,7 @@ if __name__ == '__main__':
         print('Program for Temperature Monitoring and/or Control using a Datalogger.com\nrelay switch to activate halogen lights.\nEmail updates will be sent every 4 hours from an email the users specifies\n')
         filename=input('Please type destination filename with .csv \n')
         if filename[-4:]=='.csv':
-            Experiment=DataAQ(filename,control = 'N')
+            Experiment=DataAQ(filename,control = 'Y')
             Experiment.Aquire()
         else:
             print('You did not add ".csv" to the end of the file!')
