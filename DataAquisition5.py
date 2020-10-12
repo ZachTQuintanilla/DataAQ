@@ -12,7 +12,7 @@ import time
 import smtplib
 import sys
 import getpass
-import Adafruit_MAX31855.MAX31855 as MAX31855
+import adafruit_max31855
 import adafruit_max31865
 import Adafruit_DHT as dht
 import board
@@ -64,10 +64,9 @@ class DataAQ():
     
     def K_type_init(self):
         #Inititalize K Thermocouple
-        CLK = 25
-        CS  = 24
-        DO  = 18
-        ksensor = MAX31855.MAX31855(CLK, CS, DO)
+        spi = busio.SPI(board.SCK, MOSI = board.MOSI, MISO = board.MISO)
+        cs = digitalio.DigitalInOut(board.D24)
+        ksensor = adafruit_max31855.MAX31855(spi,cs)
         return ksensor
        
     def RTD_init(self):
@@ -203,6 +202,7 @@ class DataAQ():
         ecount = 0
         plt.show(block=True)
         rtdsensor=self.RTD_init()
+        #ksensor = self.K_type_init()
         self.Sartorius_init('/dev/ttyUSB0')  
         if os.path.isfile(self.filename):
             answer = input('File already exists! Would you like to append to the exsisting file? (Y/N) \n')
@@ -247,7 +247,8 @@ class DataAQ():
                 print('Scale Error = Value Too Small')
                 weight = self.Scale_Value()
             Liq_Temperature = rtdsensor.temperature 
-            #Liq_Temperature = ksensor.readTempC()  
+            #Liq_Temperature = ksensor.temperature
+            #print(f'Ktype Sensor is {ksensor.temperature}')
             Humidity, Air_Temperature = dht.read_retry(dht.DHT22, 4)
             AdjWeight=self.Temp_Correction(Liq_Temperature,refD,weight)
             PlusError, MinusError = self.Error(Liq_Temperature, refD, weight)
