@@ -29,16 +29,20 @@ from email.mime.image import MIMEImage
 
 class DataAQ():
     
-    def __init__(self, filename='abc.csv',salinity = 30):
+    def __init__(self, filename='abc.csv', email = 'Y', salinity = 30):
         self.filename = filename
         self.name=self.filename.split('.')[0]
-        try:
-            self.Check_Cred()
-        except:
-            self.My_Email = input('Please provide the sending email address:\n')
-            self.Pass = getpass.getpass(prompt='Please provide the sending email password:\n')
-            self.Check_Login()
-            
+        self.email = email
+        if self.email == 'Y':
+            try:
+                self.Check_Cred()
+            except:
+                self.My_Email = input('Please provide the sending email address:\n')
+                self.Pass = getpass.getpass(prompt='Please provide the sending email password:\n')
+                self.Check_Login()
+        else:
+            print('Email Capability Disabled!')
+                
     def Check_Cred(self):
         with open('Credentials', mode='r') as info:
             for line in info:
@@ -196,7 +200,21 @@ class DataAQ():
         High_Weight_Error = self.Temp_Correction(High_Temp,RefD,raw_weight)
         Low_Weight_Error = self.Temp_Correction(Low_Temp,RefD,raw_weight)
         return High_Weight_Error, Low_Weight_Error
-        
+    def Collect(self,starttime,refD,rtdsensor,writer):
+            timestamp = datetime.datetime.now().replace(microsecond=0)
+            relativetime = (timestamp-starttime)/datetime.timedelta(hours=1)
+            weight = self.Scale_Value()
+            while weight<10:
+                print('Scale Error = Value Too Small')
+                weight = self.Scale_Value()
+            Liq_Temperature = rtdsensor.temperature 
+            #Liq_Temperature = ksensor.temperature
+            #print(f'Ktype Sensor is {ksensor.temperature}')
+            Humidity, Air_Temperature = dht.read_retry(dht.DHT22, 4)
+            AdjWeight=self.Temp_Correction(Liq_Temperature,refD,weight)
+            PlusError, MinusError = self.Error(Liq_Temperature, refD, weight)
+            writer.writerow([timestamp,format(relativetime,'.4f'),format(weight,'.4f'),format(Liq_Temperature,'.4f'),format(Air_Temperature,'.4f'), format(Humidity,'.2f'), format(AdjWeight,'.4f'), format(PlusError,'.4f'), format(MinusError,'.4f')])
+            
     def Aquire(self):    
         count = 0
         ecount = 0
@@ -210,11 +228,15 @@ class DataAQ():
                 wfile=open(f'{self.filename}', mode='a+')
                 writer = csv.writer(wfile, lineterminator = '\n')  
                 variable_line=linecache.getline(self.filename, 2).split(',')
-                self.salinity=float(variable_line[1])
+                if variable_line[1]!= 'C12':
+                    self.salinity = float(variable_line[1])
+                else:
+                    self.salinity = 'C12'
                 self.Vs=float(variable_line[3])
                 starttime=datetime.datetime.strptime(variable_line[5], '%Y-%m-%d %H:%M:%S')
                 initialweight = float(variable_line[7])
                 refD=self.Density_Calc(float(variable_line[9]))
+                print('Appending to existing Datafile!')
             else:
                 sys.exit('Answer was not Y! Cancel DataAQ()')
         else:    
@@ -238,22 +260,15 @@ class DataAQ():
                 initialweight = self.Scale_Value()
             writer.writerow(['Brine_Salinity/C12',self.salinity,'Vs',self.Vs,'StartTime',starttime,'InitialWeight',initialweight,'Initial_Temp',initial_temp])
             writer.writerow(['Time','Relative Time (Hours)','Weight (g)','Liq Temperature (C)','Air Temperature (C)','Humidity','Temp Adjusted Weight (g)', '(+)Error from RTD sensor (g)','(-)Error from RTD sensor (g)','Comments'])
-        print('Initial Data Recorded! Starting DataAQ!')
+            print('Initial Data Recorded! Starting DataAQ!')
+            #collect data every 5 sec for first 10 min
+            for i in range(1,120):
+                self.Collect(starttime,refD,rtdsensor,writer)
+                time.sleep(5)
+            print('Early Time Data Collection Complete!')
+        #collect data every min after first 10 min or appending
         while True: 
-            timestamp = datetime.datetime.now().replace(microsecond=0)
-            relativetime = (timestamp-starttime)/datetime.timedelta(hours=1)
-            weight = self.Scale_Value()
-            while weight<10:
-                print('Scale Error = Value Too Small')
-                weight = self.Scale_Value()
-            Liq_Temperature = rtdsensor.temperature 
-            #Liq_Temperature = ksensor.temperature
-            #print(f'Ktype Sensor is {ksensor.temperature}')
-            Humidity, Air_Temperature = dht.read_retry(dht.DHT22, 4)
-            AdjWeight=self.Temp_Correction(Liq_Temperature,refD,weight)
-            PlusError, MinusError = self.Error(Liq_Temperature, refD, weight)
-            writer.writerow([timestamp,format(relativetime,'.4f'),format(weight,'.4f'),format(Liq_Temperature,'.4f'),format(Air_Temperature,'.4f'), format(Humidity,'.2f'), format(AdjWeight,'.4f'), format(PlusError,'.4f'), format(MinusError,'.4f')])
-            #needs to be 15,30,45,60 sec interval)
+            self.Collect(starttime,refD,rtdsensor,writer)
             time.sleep(60)
             count+=1
             ecount+=1
@@ -262,13 +277,16 @@ class DataAQ():
                 wfile.close()
                 #email every 4 hrs ecount==960,480,320,240
                 print(f'DATA LOGGED @ {datetime.datetime.now().replace(microsecond=0)}!')
-                if ecount >= 240:
+                if ecount >= 240 and self.email == 'Y':
                     try:
                         self.send_email(format(weight-initialweight,'.4f'))
                         initialweight=self.Scale_Value()
                         ecount = 0
                     except:
-                        print('Email(s) not sent! Still recording data!')                
+                        print('Email(s) not sent! Still recording data!')
+                        self.simple_plot()
+                else:
+                    self.simple_plot()
                 wfile=open(f'{self.filename}', mode='a+')
                 writer = csv.writer(wfile, lineterminator = '\n')
                 count=0
@@ -278,7 +296,7 @@ if __name__ == '__main__':
         print('Program for Spontaneous Imbibtion Experiments\nThis program is for use with a Sartorius Scale and RTD temperature sensor and/or K-type thermocouple.\nEmail updates will be sent every 4 hours from an email the users specifies\n')
         filename=input('Please type destination filename with .csv \n')
         if filename[-4:]=='.csv':
-            Experiment=DataAQ(filename)
+            Experiment=DataAQ(filename,email = 'N')
             Experiment.Aquire()
         else:
             print('You did not add ".csv" to the end of the file!')
