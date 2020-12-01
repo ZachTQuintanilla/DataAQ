@@ -1,6 +1,6 @@
 # Data_Aquisition
 
-These codes are for the implementation of experimental research efforts by Zach Quintanilla.
+These codes are used by Zach Quintanilla in his experimental research efforts to monitor multi-phase properties in unconventional rocks.
 
 ## import_packages.txt
 This imports the relevent packages that you may need to install on a new Raspberry Pi in order to perform the codes within this Repository.
