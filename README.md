@@ -1,6 +1,6 @@
 # Data_Aquisition
 
-These codes are used by Zach Quintanilla in his experimental research efforts to monitor multi-phase properties in unconventional rocks.
+These codes are used by Zach Quintanilla in his experimental research efforts to monitor multi-phase properties in unconventional rocks. All codes are written in python.
 
 ## import_packages.txt
 This imports the relevent packages that you may need to install on a new Raspberry Pi in order to perform the codes within this Repository.
@@ -14,7 +14,7 @@ This also has the capability to send regular reports through email to update on 
 Very similar to DataAquisition5 except that it is formated to work for a different Sartorius scale.
 
 ## DataAquisition_TempControl.py
-This is for monitoring and controling the temperature of an experiment within a specified temperature range by contorlling a IoT relay that provides power to the heat source. 
+This is for monitoring and/or controlling the temperature of an experiment within a specified temperature range by contorlling a IoT relay that provides power to the heat source. 
 The temperature is monitored by an RTD temperature sensor and Adafruit MAX 31865 Temperature Sensor Amplifier.This also has the capability to send regular reports through email 
 to update on the status of the experiment. 
 
