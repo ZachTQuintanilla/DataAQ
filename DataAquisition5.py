@@ -12,7 +12,7 @@ import time
 import smtplib
 import sys
 import getpass
-import adafruit_max31855
+#import adafruit_max31855
 import adafruit_max31865
 import Adafruit_DHT as dht
 import board
@@ -279,6 +279,7 @@ class DataAQ():
                 print(f'DATA LOGGED @ {datetime.datetime.now().replace(microsecond=0)}!')
                 if ecount >= 240 and self.email == 'Y':
                     try:
+                        weight=self.Scale_Value()
                         self.send_email(format(weight-initialweight,'.4f'))
                         initialweight=self.Scale_Value()
                         ecount = 0
@@ -296,7 +297,7 @@ if __name__ == '__main__':
         print('Program for Spontaneous Imbibtion Experiments\nThis program is for use with a Sartorius Scale and RTD temperature sensor and/or K-type thermocouple.\nEmail updates will be sent every 4 hours from an email the users specifies\n')
         filename=input('Please type destination filename with .csv \n')
         if filename[-4:]=='.csv':
-            Experiment=DataAQ(filename,email = 'N')
+            Experiment=DataAQ(filename,email = 'Y')
             Experiment.Aquire()
         else:
             print('You did not add ".csv" to the end of the file!')
